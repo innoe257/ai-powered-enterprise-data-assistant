@@ -72,6 +72,8 @@ def init_session_state():
         'chat_history': [],
         'selected_ticker': 'MSFT',
         'selected_doc': None,
+        'current_page': '💬 RAG Chat',
+        'pending_query': None,
         'mode': os.getenv('APP_MODE', 'demo'),
         'data_loaded': False,
         'filings': None,
@@ -116,11 +118,24 @@ def render_sidebar():
         
         # Navigation
         st.markdown("#### Navigation")
+        pages = ["💬 RAG Chat", "📈 Financial Dashboard", "📄 Document Viewer"]
+        current_page = st.session_state.get('current_page', '💬 RAG Chat')
+        try:
+            current_index = pages.index(current_page)
+        except ValueError:
+            current_index = 0
+        
         page = st.radio(
             "Go to",
-            ["💬 RAG Chat", "📈 Financial Dashboard", "📄 Document Viewer"],
+            pages,
+            index=current_index,
             label_visibility="collapsed"
         )
+        
+        # Update current page in session state if changed
+        if page != current_page:
+            st.session_state.current_page = page
+            st.rerun()
         
         st.markdown("---")
         

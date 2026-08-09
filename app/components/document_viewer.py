@@ -43,12 +43,23 @@ def display_document(filing: dict):
     
     st.markdown(f"#### {filing['form_type']} - {filing['filing_date']}")
     
+    # Determine file path - prefer text, fallback to html
+    filepath = filing.get('filepath')
+    html_path = filing.get('html_path')
+    
+    if filepath is None and html_path is None:
+        st.warning("Document file not available for this filing.")
+        return
+    
+    # Use available path
+    path_to_use = filepath if filepath is not None else html_path
+    
     # Search within document
     search_term = st.text_input("Search within document", key="doc_search")
     
     # Load content
     try:
-        with open(filing['filepath'], 'r', encoding='utf-8') as f:
+        with open(path_to_use, 'r', encoding='utf-8') as f:
             content = f.read()
     except Exception as e:
         st.error(f"Error loading document: {e}")

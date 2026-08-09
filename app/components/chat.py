@@ -26,8 +26,15 @@ def render_chat_interface():
         ]
         for ex in examples:
             if st.button(ex, key=f"ex_{ex[:20]}"):
-                st.session_state.current_query = ex
+                st.session_state.pending_query = ex
                 st.rerun()
+    
+    # Process pending query from example button click
+    if st.session_state.get('pending_query'):
+        query = st.session_state.pending_query
+        st.session_state.pending_query = None  # Clear it
+        process_query(query)
+        return  # Stop here to avoid double-processing
     
     # Chat input
     query = st.chat_input("Ask about financial data...")
