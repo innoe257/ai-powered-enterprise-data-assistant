@@ -7,8 +7,6 @@ from datetime import datetime
 
 from app.utils.embeddings import search_documents, generate_response
 from app.utils.data_loader import get_ticker_filings
-from ..utils.data_loader import get_ticker_filings
-from app.utils.data_loader import get_ticker_filings
 
 
 def render_chat_interface():
