@@ -43,6 +43,81 @@ def load_snowflake_data() -> Tuple[List[dict], Optional[dict], Dict[str, dict]]:
         filings_df = pd.read_sql("SELECT * FROM RAW_DATA.SEC_FILINGS", conn)
         filings = filings_df.to_dict('records')
         
+        # Normalize column names to lowercase for consistent access
+        for f in filings:
+            f['ticker'] = f.get('TICKER', f.get('ticker', ''))
+            f['form_type'] = f.get('FORM_TYPE', f.get('form_type', ''))
+            f['filing_date'] = f.get('FILING_DATE', f.get('filing_date', ''))
+            f['filename'] = f.get('FILENAME', f.get('filename', ''))
+        
+        # Load text chunks from Snowflake and attach content to filings
+        chunks_df = pd.read_sql(
+            "SELECT filing_id, chunk_text, chunk_index FROM RAW_DATA.TEXT_CHUNKS ORDER BY chunk_index",
+            conn
+        )
+        
+        # Build a content map: filing_id -> concatenated chunks
+        content_map = {}
+        for _, row in chunks_df.iterrows():
+            fid = row.get('FILING_ID', row.get('filing_id', ''))
+            text = row.get('CHUNK_TEXT', row.get('chunk_text', ''))
+            if fid not in content_map:
+                content_map[fid] = []
+            content_map[fid].append(text)
+        
+        # Attach content to filings
+        for f in filings:
+            filing_id = f"{f['ticker']}_{f['form_type']}_{f['filing_date']}"
+            if filing_id in content_map:
+                f['content'] = '\n'.join(content_map[filing_id])
+                f['filepath'] = None  # No local file, use content instead
+            else:
+                f['content'] = None
+                f['filepath'] = None
+        
+        metrics_df = pd.read_sql("SELECT * FROM PROCESSED_DATA.FINANCIAL_METRICS", conn)
+        
+        xbrl_data = {}
+        tickers = metrics_df['TICKER'].unique() if 'TICKER' in metrics_df.columns else []
+        for ticker in tickers:
+            ticker_df = metrics_df[metrics_df['TICKER'] == ticker]
+            ticker_metrics = {}
+            for metric_name in ticker_df['METRIC_NAME'].unique():
+                metric_df = ticker_df[ticker_df['METRIC_NAME'] == metric_name].copy()
+                metric_df.columns = [c.lower() for c in metric_df.columns]
+                ticker_metrics[metric_name] = metric_df
+            xbrl_data[ticker] = ticker_metrics
+        
+        conn.close()
+        return filings, None, xbrl_data
+        
+    except Exception:
+        return load_demo_data()
+    """Load data from Snowflake backend. Falls back to demo if connection fails."""
+    try:
+        import snowflake.connector
+        
+        account = os.getenv('SNOWFLAKE_ACCOUNT')
+        user = os.getenv('SNOWFLAKE_USER')
+        password = os.getenv('SNOWFLAKE_PASSWORD')
+        
+        if not all([account, user, password]):
+            return load_demo_data()
+        
+        conn = snowflake.connector.connect(
+            account=account,
+            user=user,
+            password=password,
+            role=os.getenv('SNOWFLAKE_ROLE', 'ACCOUNTADMIN'),
+            warehouse=os.getenv('SNOWFLAKE_WAREHOUSE', 'FINANCIAL_RAG_WH'),
+            database=os.getenv('SNOWFLAKE_DATABASE', 'FINANCIAL_RAG'),
+            schema=os.getenv('SNOWFLAKE_SCHEMA', 'PUBLIC'),
+            login_timeout=10
+        )
+        
+        filings_df = pd.read_sql("SELECT * FROM RAW_DATA.SEC_FILINGS", conn)
+        filings = filings_df.to_dict('records')
+        
         metrics_df = pd.read_sql("SELECT * FROM PROCESSED_DATA.FINANCIAL_METRICS", conn)
         
         xbrl_data = {}

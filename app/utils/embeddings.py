@@ -24,6 +24,44 @@ def keyword_search(query: str, filings: List[dict], top_k: int) -> List[dict]:
     results = []
 
     for filing in filings:
+        # Try content field first (Snowflake mode), then local filepath
+        content = None
+        if filing.get('content'):
+            content = filing['content']
+        elif filing.get('filepath'):
+            try:
+                with open(filing['filepath'], 'r', encoding='utf-8') as f:
+                    content = f.read()
+            except Exception:
+                continue
+        
+        if not content:
+            continue
+
+        # Score by term frequency
+        score = sum(content.lower().count(term) for term in query_terms)
+
+        if score > 0:
+            snippet = extract_snippet(content, query_terms[0])
+            results.append({
+                'ticker': filing['ticker'],
+                'form_type': filing['form_type'],
+                'filing_date': filing['filing_date'],
+                'content': snippet,
+                'score': score,
+                'source': f"{filing['ticker']} {filing['form_type']} ({filing['filing_date']})"
+            })
+
+    results.sort(key=lambda x: x['score'], reverse=True)
+    return results[:top_k]
+    """Keyword-based search - no heavy ML dependencies."""
+    query_terms = [t for t in query.lower().split() if len(t) > 2]
+    if not query_terms:
+        query_terms = [query.lower()]
+
+    results = []
+
+    for filing in filings:
         if not filing.get('filepath'):
             continue
 
