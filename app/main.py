@@ -14,6 +14,16 @@ from dotenv import load_dotenv
 # Load environment variables
 load_dotenv()
 
+# Import app modules - these work when app.main is run as a module
+from app.components.chat import render_chat_interface
+from app.components.dashboard import render_financial_dashboard
+from app.components.document_viewer import render_document_viewer
+from app.utils.data_loader import load_demo_data, load_snowflake_data
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
+
 # Use relative imports since this file is inside the app package
 from .components.chat import render_chat_interface
 from .components.dashboard import render_financial_dashboard

@@ -13,8 +13,6 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).parent
 sys.path.insert(0, str(REPO_ROOT))
 
-# Import and run the main app
-from app.main import main
-
-if __name__ == "__main__":
-    main()
+# Run app/main.py as a module so package imports work correctly
+import runpy
+runpy.run_module('app.main', run_name='__main__')
