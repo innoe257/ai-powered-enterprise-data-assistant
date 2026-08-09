@@ -1,7 +1,15 @@
 -- ============================================================
--- Snowflake Cortex AI Integration
+-- Snowflake Cortex AI Integration (PAID ACCOUNTS ONLY)
 -- Author: Innocent Mamvura
 -- Description: Sets up Cortex AI functions for the RAG pipeline.
+-- 
+-- ⚠️  IMPORTANT: Cortex AI functions require a PAID Snowflake account.
+--    Trial accounts do NOT have access to:
+--      - SNOWFLAKE.CORTEX.EMBED_TEXT_768
+--      - SNOWFLAKE.CORTEX.COMPLETE
+--    
+--    For trial accounts, use the Claude API integration in the 
+--    Streamlit app instead (set CLAUDE_API_KEY in .env).
 -- ============================================================
 
 USE DATABASE FINANCIAL_RAG;

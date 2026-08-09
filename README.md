@@ -109,45 +109,111 @@ The app will start at `http://localhost:8501`
 
 ## ❄️ Snowflake Setup
 
-### 1. Run Database Setup SQL
+### Prerequisites
+
+- A Snowflake account (trial or paid)
+- `snowsql` CLI or Snowflake Web UI access
+- Python with `snowflake-connector-python` installed
+
+### Step 1: Configure Credentials
+
+Copy `.env.example` to `.env` and add your Snowflake credentials:
 
 ```bash
-# Connect to Snowflake and run setup script
-snowsql -f snowflake/sql/01_setup_database.sql
+cp .env.example .env
+```
+
+Edit `.env`:
+```env
+SNOWFLAKE_ACCOUNT=your_account_identifier
+SNOWFLAKE_USER=your_username
+SNOWFLAKE_PASSWORD=your_password
+SNOWFLAKE_ROLE=ACCOUNTADMIN
+SNOWFLAKE_WAREHOUSE=FINANCIAL_RAG_WH
+SNOWFLAKE_DATABASE=FINANCIAL_RAG
+SNOWFLAKE_SCHEMA=PUBLIC
+APP_MODE=snowflake
+CLAUDE_API_KEY=your_claude_api_key
+```
+
+### Step 2: Create Database & Tables
+
+Connect to Snowflake and run the setup script:
+
+```bash
+# Using SnowSQL CLI
+snowsql -a YOUR_ACCOUNT -u YOUR_USER -f snowflake/sql/01_setup_database.sql
+
+# Or copy/paste into Snowflake Web UI (Worksheets)
 ```
 
 This creates:
-- Warehouses (`FINANCIAL_RAG_WH`, `FINANCIAL_RAG_COMPUTE_WH`)
-- Database (`FINANCIAL_RAG`) with schemas
-- Tables, stages, dynamic tables
-- Access roles and permissions
+- **Warehouses**: `FINANCIAL_RAG_WH` (XS), `FINANCIAL_RAG_COMPUTE_WH` (S)
+- **Database**: `FINANCIAL_RAG` with 4 schemas
+- **Tables**: `SEC_FILINGS`, `TEXT_CHUNKS`, `DOCUMENT_EMBEDDINGS`, `FINANCIAL_METRICS`, `COMPANY_INFO`
+- **Dynamic Tables**: Auto-updating analytics views
+- **Roles & Permissions**: `FINANCIAL_RAG_ROLE`
+- **Search Optimization**: On key lookup columns
 
-### 2. Run Cortex AI Integration
+### Step 3: Choose Your Backend SQL
+
+#### Option A — Trial Accounts (No Cortex AI)
+
+Trial accounts don't have access to Snowflake Cortex AI (`EMBED_TEXT_768`, `COMPLETE`). Use this option:
 
 ```bash
-snowsql -f snowflake/sql/02_cortex_ai.sql
+snowsql -a YOUR_ACCOUNT -u YOUR_USER -f snowflake/sql/02_trial_backend.sql
 ```
 
-This sets up:
-- `CORTEX_EMBED_TEXT()` — Generate embeddings
-- `CORTEX_RAG_RESPONSE()` — Generate AI responses
+This creates:
+- `KEYWORD_SEARCH()` — Text search function (no vector similarity)
+- `GET_COMPANY_METRICS()` — Financial metrics aggregation
+- `LOG_SEARCH()` — Search analytics logging
+- Analytics views: `VW_FILING_OVERVIEW`, `VW_METRICS_COMPARISON`
+
+The app uses **Claude API** for AI responses instead of Cortex.
+
+#### Option B — Paid Accounts (Full Cortex AI)
+
+If you have a paid Snowflake account with Cortex AI enabled:
+
+```bash
+snowsql -a YOUR_ACCOUNT -u YOUR_USER -f snowflake/sql/02_cortex_ai.sql
+```
+
+This creates:
+- `CORTEX_EMBED_TEXT()` — Generate 768-dim embeddings
+- `CORTEX_RAG_RESPONSE()` — AI response generation
 - `SEMANTIC_SEARCH()` — Vector similarity search
-- `RAG_QUERY()` — End-to-end RAG pipeline
-- Scheduled tasks for incremental processing
+- `RAG_QUERY()` — End-to-end RAG stored procedure
+- Scheduled Tasks for daily processing
 
-### 3. Configure App for Snowflake Mode
+### Step 4: Load Demo Data into Snowflake
 
-Edit `.env`:
+After downloading SEC filings locally, load them into Snowflake:
 
-```env
-APP_MODE=snowflake
-SNOWFLAKE_ACCOUNT=your_account
-SNOWFLAKE_USER=your_username
-SNOWFLAKE_PASSWORD=your_password
-SNOWFLAKE_ROLE=FINANCIAL_RAG_ROLE
-SNOWFLAKE_WAREHOUSE=FINANCIAL_RAG_WH
-SNOWFLAKE_DATABASE=FINANCIAL_RAG
+```bash
+# Test connection first
+python snowflake/python/setup_connection.py
+
+# Load all demo data (filings, chunks, metrics, company info)
+python snowflake/python/load_demo_data.py
 ```
+
+This populates:
+- `RAW_DATA.SEC_FILINGS` — Filing metadata
+- `RAW_DATA.TEXT_CHUNKS` — Document chunks for search
+- `PROCESSED_DATA.FINANCIAL_METRICS` — XBRL financial data
+- `PROCESSED_DATA.COMPANY_INFO` — Company dimension
+
+### Step 5: Run the App in Snowflake Mode
+
+```bash
+# Ensure APP_MODE=snowflake in .env
+streamlit run app/main.py
+```
+
+The app will now query Snowflake for all data instead of local files.
 
 ---
 
@@ -156,22 +222,25 @@ SNOWFLAKE_DATABASE=FINANCIAL_RAG
 ```
 ai-powered-enterprise-data-assistant/
 ├── app/                          # Streamlit application
-│   ├── main.py                   # Entry point
+│   ├── main.py                   # Entry point (dual mode: demo/snowflake)
 │   ├── components/               # UI components
 │   │   ├── chat.py              # RAG chat interface
 │   │   ├── dashboard.py         # Financial dashboards
 │   │   └── document_viewer.py   # SEC filing browser
 │   └── utils/                    # Utilities
-│       ├── data_loader.py       # Data loading
-│       ├── embeddings.py        # Search & RAG logic
+│       ├── data_loader.py       # Data loading (demo + Snowflake)
+│       ├── embeddings.py        # Search & RAG logic (Claude + fallback)
 │       └── config.py            # Configuration
 ├── snowflake/                    # Snowflake artifacts
 │   ├── sql/                      # SQL scripts
-│   │   ├── 01_setup_database.sql
-│   │   └── 02_cortex_ai.sql
+│   │   ├── 01_setup_database.sql # Database, tables, warehouses, roles
+│   │   ├── 02_trial_backend.sql  # Trial-compatible functions (NO Cortex)
+│   │   └── 02_cortex_ai.sql     # Full Cortex AI (paid accounts only)
 │   └── python/                   # Snowpark Python
-│       ├── document_processor.py
-│       └── generate_embeddings.py
+│       ├── setup_connection.py  # Connection test
+│       ├── load_demo_data.py    # Load SEC data into Snowflake
+│       ├── document_processor.py # Chunking & cleaning UDFs
+│       └── generate_embeddings.py # Local embedding generation
 ├── data/                         # Data files (gitignored)
 │   ├── filings/                  # SEC filings
 │   └── embeddings/              # Pre-computed vectors
@@ -256,9 +325,10 @@ pytest tests/ --cov=app --cov-report=html
 ### Snowflake Production
 
 1. Run all SQL scripts in `snowflake/sql/`
-2. Upload filing documents to `@RAW_DATA.SEC_FILINGS_STAGE`
-3. Execute stored procedures to process chunks and embeddings
-4. Configure app with Snowflake credentials
+2. Load demo data: `python snowflake/python/load_demo_data.py`
+3. Configure app with Snowflake credentials in `.env`
+4. Set `APP_MODE=snowflake`
+5. Deploy to Streamlit Cloud or run locally
 
 ---
 
