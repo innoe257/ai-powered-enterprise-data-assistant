@@ -1,6 +1,6 @@
 # 📊 Snowflake Financial Intelligence RAG
 
-[![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://your-app-url.streamlit.app)
+[![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://innoe257-snowflake-financial-rag.streamlit.app)
 [![Python 3.11](https://img.shields.io/badge/python-3.11-blue.svg)](https://www.python.org/downloads/)
 [![Snowflake](https://img.shields.io/badge/Snowflake-Cortex%20AI-29B5E8)](https://www.snowflake.com/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -84,7 +84,7 @@ The demo mode uses pre-loaded SEC filings from major tech companies:
 
 ```bash
 # Clone the repo
-git clone https://github.com/innocentmamvura/snowflake-financial-rag.git
+git clone https://github.com/innoe257/snowflake-financial-rag.git
 cd snowflake-financial-rag
 
 # Create virtual environment
@@ -267,7 +267,7 @@ MIT License - see [LICENSE](LICENSE) for details.
 **Innocent Mamvura**
 
 - LinkedIn: [linkedin.com/in/innocentmamvura](https://linkedin.com/in/innocentmamvura)
-- GitHub: [@innocentmamvura](https://github.com/innocentmamvura)
+- GitHub: [@innoe257](https://github.com/innoe257)
 - Role: Lead Data Scientist | AI/ML & GenAI
 
 ---
