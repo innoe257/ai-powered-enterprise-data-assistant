@@ -5,6 +5,18 @@ import re
 from typing import List, Dict, Tuple, Optional
 
 
+# Company name → ticker mapping for natural language queries
+COMPANY_TO_TICKER = {
+    'apple': 'AAPL',
+    'microsoft': 'MSFT',
+    'google': 'GOOGL',
+    'alphabet': 'GOOGL',
+    'amazon': 'AMZN',
+    'nvidia': 'NVDA',
+    'tesla': 'TSLA',
+}
+
+
 def search_documents(
     query: str,
     embeddings: Optional[dict],
@@ -54,39 +66,6 @@ def keyword_search(query: str, filings: List[dict], top_k: int) -> List[dict]:
 
     results.sort(key=lambda x: x['score'], reverse=True)
     return results[:top_k]
-    """Keyword-based search - no heavy ML dependencies."""
-    query_terms = [t for t in query.lower().split() if len(t) > 2]
-    if not query_terms:
-        query_terms = [query.lower()]
-
-    results = []
-
-    for filing in filings:
-        if not filing.get('filepath'):
-            continue
-
-        try:
-            with open(filing['filepath'], 'r', encoding='utf-8') as f:
-                content = f.read()
-        except Exception:
-            continue
-
-        # Score by term frequency
-        score = sum(content.lower().count(term) for term in query_terms)
-
-        if score > 0:
-            snippet = extract_snippet(content, query_terms[0])
-            results.append({
-                'ticker': filing['ticker'],
-                'form_type': filing['form_type'],
-                'filing_date': filing['filing_date'],
-                'content': snippet,
-                'score': score,
-                'source': f"{filing['ticker']} {filing['form_type']} ({filing['filing_date']})"
-            })
-
-    results.sort(key=lambda x: x['score'], reverse=True)
-    return results[:top_k]
 
 
 def extract_snippet(content: str, keyword: str, context: int = 250) -> str:
@@ -107,6 +86,25 @@ def extract_snippet(content: str, keyword: str, context: int = 250) -> str:
     return snippet
 
 
+def extract_tickers_from_query(query: str) -> List[str]:
+    """Extract tickers from query using both symbols and company names."""
+    query_lower = query.lower()
+    tickers = []
+    
+    # Check for ticker symbols
+    all_tickers = ['AAPL', 'MSFT', 'GOOGL', 'AMZN', 'NVDA', 'TSLA']
+    for t in all_tickers:
+        if t.lower() in query_lower:
+            tickers.append(t)
+    
+    # Check for company names
+    for name, ticker in COMPANY_TO_TICKER.items():
+        if name in query_lower and ticker not in tickers:
+            tickers.append(ticker)
+    
+    return tickers
+
+
 def generate_response(
     query: str,
     relevant_docs: List[dict],
@@ -124,8 +122,7 @@ def generate_response(
             print(f"Claude API error: {e}, falling back to rule-based")
 
     # Fallback to rule-based
-    tickers = ['AAPL', 'MSFT', 'GOOGL', 'AMZN', 'NVDA', 'TSLA']
-    mentioned_tickers = [t for t in tickers if t.lower() in query.lower()]
+    mentioned_tickers = extract_tickers_from_query(query)
     response = build_rule_based_response(query, relevant_docs, xbrl_data, mentioned_tickers)
     return response, sources
 
@@ -145,8 +142,7 @@ def generate_claude_response(
         context_parts.append(f"Document: {doc['source']}\n{doc['content'][:800]}")
 
     # Add XBRL data for mentioned tickers
-    tickers = ['AAPL', 'MSFT', 'GOOGL', 'AMZN', 'NVDA', 'TSLA']
-    mentioned_tickers = [t for t in tickers if t.lower() in query.lower()]
+    mentioned_tickers = extract_tickers_from_query(query)
 
     xbrl_context = ""
     for ticker in mentioned_tickers:
