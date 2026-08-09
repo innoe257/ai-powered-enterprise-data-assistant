@@ -5,7 +5,8 @@ import pandas as pd
 import numpy as np
 from datetime import datetime
 
-from app.utils.embeddings import search_documents, generate_response
+from ..utils.embeddings import search_documents, generate_response
+from ..utils.data_loader import get_ticker_filings
 from app.utils.data_loader import get_ticker_filings
 
 

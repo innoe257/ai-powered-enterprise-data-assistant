@@ -6,24 +6,19 @@ Author: Innocent Mamvura
 """
 
 import os
-import sys
-from pathlib import Path
+from datetime import datetime
+
+import streamlit as st
 from dotenv import load_dotenv
 
 # Load environment variables
 load_dotenv()
 
-# Add project root to path
-PROJECT_ROOT = Path(__file__).parent.parent
-sys.path.insert(0, str(PROJECT_ROOT))
-
-import streamlit as st
-from datetime import datetime
-
-from app.components.chat import render_chat_interface
-from app.components.dashboard import render_financial_dashboard
-from app.components.document_viewer import render_document_viewer
-from app.utils.data_loader import load_demo_data, load_snowflake_data
+# Use relative imports since this file is inside the app package
+from .components.chat import render_chat_interface
+from .components.dashboard import render_financial_dashboard
+from .components.document_viewer import render_document_viewer
+from .utils.data_loader import load_demo_data, load_snowflake_data
 
 # Page configuration
 st.set_page_config(
@@ -200,7 +195,3 @@ def main():
         render_financial_dashboard()
     elif "Document Viewer" in page:
         render_document_viewer()
-
-
-if __name__ == "__main__":
-    main()
