@@ -7,7 +7,7 @@
 
 > **Enterprise-grade Financial Document Analysis powered by Snowflake AI**
 
-An end-to-end Retrieval-Augmented Generation (RAG) system for analyzing SEC financial filings, built entirely on Snowflake with a Streamlit frontend. Designed to showcase production data engineering and AI/ML skills to potential employers.
+An end-to-end Retrieval-Augmented Generation (RAG) system for analyzing SEC financial filings, built with Snowflake + Streamlit + Claude AI. Designed to showcase production data engineering and AI/ML skills to potential employers.
 
 ![Architecture](docs/architecture.png)
 
@@ -18,7 +18,8 @@ An end-to-end Retrieval-Augmented Generation (RAG) system for analyzing SEC fina
 | Skill | Implementation |
 |-------|---------------|
 | **Snowflake Architecture** | Warehouses, Dynamic Tables, Streams, Tasks, Search Optimization |
-| **Cortex AI** | `EMBED_TEXT_768`, `COMPLETE`, Vector Search, Semantic Search UDFs |
+| **Cortex AI** | `EMBED_TEXT_768`, Vector Search, Semantic Search UDFs |
+| **Claude AI** | Anthropic API for intelligent RAG responses (Snowflake Cortex alternative) |
 | **Snowpark Python** | UDFs, Stored Procedures, DataFrames, Session management |
 | **Data Engineering** | ETL pipelines, chunking, embedding generation, incremental processing |
 | **Streamlit** | Production web app with chat interface, dashboards, document viewer |
@@ -42,7 +43,7 @@ An end-to-end Retrieval-Augmented Generation (RAG) system for analyzing SEC fina
 ├─────────────────────────────────────────────────────────────────────────┤
 │                         LAYER 3: RAG INTERFACE                           │
 │  User Query ──► SEMANTIC_SEARCH() ──► Top-K Chunks                      │
-│  Context + Query ──► Cortex COMPLETE ──► AI Response                    │
+│  Context + Query ──► Claude API ──► AI Response                         │
 ├─────────────────────────────────────────────────────────────────────────┤
 │                         LAYER 4: FRONTEND                                │
 │  Streamlit App: Chat │ Dashboard │ Document Viewer                      │
@@ -96,7 +97,7 @@ pip install -r requirements.txt
 
 # Configure environment
 cp .env.example .env
-# Edit .env with your Snowflake credentials (optional for demo)
+# Edit .env with your credentials (Snowflake optional for demo, Claude API key for AI responses)
 
 # Run the app
 streamlit run app/main.py
@@ -203,7 +204,7 @@ Try these in the RAG Chat:
 | **Database** | Snowflake (Cortex AI, Snowpark, Dynamic Tables) |
 | **Backend** | Python 3.11, Snowflake Connector |
 | **Frontend** | Streamlit, Plotly |
-| **Embeddings** | Snowflake Cortex EMBED_TEXT_768 / sentence-transformers |
+| **AI / LLM** | Snowflake Cortex (production) / Claude API (demo) |
 | **Vector Search** | FAISS / Snowflake VECTOR type |
 | **Data Source** | SEC EDGAR API |
 | **CI/CD** | GitHub Actions |
@@ -246,6 +247,11 @@ pytest tests/ --cov=app --cov-report=html
 2. Go to [share.streamlit.io](https://share.streamlit.io)
 3. Connect your GitHub account
 4. Select this repo and deploy
+5. **Add your Claude API key:** Go to app Settings → Secrets, then add:
+   ```toml
+   CLAUDE_API_KEY = "sk-ant-api03-your-key-here"
+   ```
+   *(Without this, the app works in demo mode with rule-based responses)*
 
 ### Snowflake Production
 
