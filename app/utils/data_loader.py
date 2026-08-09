@@ -1,4 +1,4 @@
-"""Data Loading Utilities."""
+"""Data Loading Utilities - Updated for Snowflake Backend."""
 
 import os
 import pandas as pd
@@ -10,13 +10,7 @@ DATA_DIR = PROJECT_ROOT / "data"
 
 
 def load_demo_data() -> Tuple[List[dict], Optional[dict], Dict[str, dict]]:
-    """Load demo data from local files.
-    
-    Returns:
-        filings: List of filing metadata + content paths
-        embeddings: Pre-computed embeddings (or None if not generated)
-        xbrl_data: Dict mapping ticker -> metric -> DataFrame
-    """
+    """Load demo data from local files."""
     filings = load_filing_metadata()
     embeddings = load_embeddings()
     xbrl_data = load_xbrl_data()
@@ -24,14 +18,49 @@ def load_demo_data() -> Tuple[List[dict], Optional[dict], Dict[str, dict]]:
 
 
 def load_snowflake_data() -> Tuple[List[dict], Optional[dict], Dict[str, dict]]:
-    """Load data from Snowflake backend.
-    
-    TODO: Implement Snowflake connector queries
-    """
-    # For now, fall back to demo mode
-    st = __import__('streamlit')
-    st.warning("Snowflake mode not yet implemented. Using demo data.")
-    return load_demo_data()
+    """Load data from Snowflake backend."""
+    try:
+        import snowflake.connector
+        
+        conn = snowflake.connector.connect(
+            account=os.getenv('SNOWFLAKE_ACCOUNT'),
+            user=os.getenv('SNOWFLAKE_USER'),
+            password=os.getenv('SNOWFLAKE_PASSWORD'),
+            role=os.getenv('SNOWFLAKE_ROLE', 'ACCOUNTADMIN'),
+            warehouse=os.getenv('SNOWFLAKE_WAREHOUSE', 'FINANCIAL_RAG_WH'),
+            database=os.getenv('SNOWFLAKE_DATABASE', 'FINANCIAL_RAG'),
+            schema=os.getenv('SNOWFLAKE_SCHEMA', 'PUBLIC'),
+            login_timeout=15
+        )
+        
+        # Load filings from Snowflake
+        filings_df = pd.read_sql("SELECT * FROM RAW_DATA.SEC_FILINGS", conn)
+        filings = filings_df.to_dict('records')
+        
+        # Load metrics from Snowflake
+        metrics_df = pd.read_sql("SELECT * FROM PROCESSED_DATA.FINANCIAL_METRICS", conn)
+        
+        # Organize metrics by ticker
+        xbrl_data = {}
+        tickers = metrics_df['TICKER'].unique() if 'TICKER' in metrics_df.columns else []
+        for ticker in tickers:
+            ticker_df = metrics_df[metrics_df['TICKER'] == ticker]
+            ticker_metrics = {}
+            for metric_name in ticker_df['METRIC_NAME'].unique():
+                metric_df = ticker_df[ticker_df['METRIC_NAME'] == metric_name].copy()
+                metric_df.columns = [c.lower() for c in metric_df.columns]
+                ticker_metrics[metric_name] = metric_df
+            xbrl_data[ticker] = ticker_metrics
+        
+        conn.close()
+        
+        embeddings = load_embeddings()
+        return filings, embeddings, xbrl_data
+        
+    except Exception as e:
+        st = __import__('streamlit')
+        st.warning(f"Snowflake connection failed: {e}. Using demo data.")
+        return load_demo_data()
 
 
 def load_filing_metadata() -> List[dict]:
@@ -90,7 +119,6 @@ def load_xbrl_data() -> Dict[str, dict]:
             if csv_path.exists():
                 try:
                     df = pd.read_csv(csv_path)
-                    # Clean numeric values
                     if 'numeric_value' in df.columns:
                         df['numeric_value'] = pd.to_numeric(df['numeric_value'], errors='coerce')
                     ticker_metrics[metric] = df
