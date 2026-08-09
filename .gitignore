@@ -1,5 +1,5 @@
-# Snowflake Financial Intelligence RAG
-# https://github.com/innocentmamvura/snowflake-financial-rag
+# AI-Powered Enterprise Data Assistant
+# https://github.com/innoe257/ai-powered-enterprise-data-assistant
 
 # Python
 __pycache__/
@@ -49,7 +49,7 @@ credentials/
 .env.*.local
 secrets.toml
 
-# Data files (large)
+# Data files (large) - keep structure but not content
 data/filings/text/*.html
 data/filings/text/*.txt
 !data/filings/.gitkeep
