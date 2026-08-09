@@ -1,4 +1,9 @@
-# 📊 Snowflake Financial Intelligence RAG
+# 🤖 AI-Powered Enterprise Data Assistant (RAG + Cortex)
+
+[![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://innoe257-ai-powered-enterprise-data-assistant.streamlit.app)
+[![Python 3.11](https://img.shields.io/badge/python-3.11-blue.svg)](https://www.python.org/downloads/)
+[![Snowflake](https://img.shields.io/badge/Snowflake-Cortex%20AI-29B5E8)](https://www.snowflake.com/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 [![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://innoe257-snowflake-financial-rag.streamlit.app)
 [![Python 3.11](https://img.shields.io/badge/python-3.11-blue.svg)](https://www.python.org/downloads/)
@@ -84,7 +89,8 @@ The demo mode uses pre-loaded SEC filings from major tech companies:
 
 ```bash
 # Clone the repo
-git clone https://github.com/innoe257/snowflake-financial-rag.git
+git clone https://github.com/innoe257/ai-powered-enterprise-data-assistant.git
+cd ai-powered-enterprise-data-assistant
 cd snowflake-financial-rag
 
 # Create virtual environment
@@ -153,7 +159,7 @@ SNOWFLAKE_DATABASE=FINANCIAL_RAG
 ## 📁 Project Structure
 
 ```
-snowflake-financial-rag/
+ai-powered-enterprise-data-assistant/
 ├── app/                          # Streamlit application
 │   ├── main.py                   # Entry point
 │   ├── components/               # UI components

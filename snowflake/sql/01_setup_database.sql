@@ -1,5 +1,5 @@
 -- ============================================================
--- Snowflake Financial Intelligence RAG - Database Setup
+-- AI-Powered Enterprise Data Assistant (RAG + Cortex) - Database Setup
 -- Author: Innocent Mamvura
 -- Description: Creates warehouses, databases, schemas, tables,
 --              and stages for the financial RAG pipeline.

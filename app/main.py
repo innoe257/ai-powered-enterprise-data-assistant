@@ -1,5 +1,5 @@
 """
-Snowflake Financial Intelligence RAG
+AI-Powered Enterprise Data Assistant (RAG + Cortex)
 Main Streamlit Application - Dual Mode (Demo / Snowflake)
 
 Author: Innocent Mamvura
@@ -30,8 +30,8 @@ from app.utils.config import get_config
 
 # Page configuration
 st.set_page_config(
-    page_title="Financial Intelligence RAG",
-    page_icon="📊",
+    page_title="AI-Powered Enterprise Data Assistant",
+    page_icon="🤖",
     layout="wide",
     initial_sidebar_state="expanded",
 )
@@ -103,7 +103,7 @@ def render_sidebar():
     """Render the sidebar navigation and controls."""
     with st.sidebar:
         st.image("https://upload.wikimedia.org/wikipedia/commons/f/fa/Snowflake_Logo.svg", width=150)
-        st.markdown("### Financial Intelligence RAG")
+        st.markdown("### AI-Powered Enterprise Data Assistant")
         st.markdown("---")
         
         # Mode indicator
@@ -160,7 +160,7 @@ def render_header():
     """Render the main header."""
     col1, col2 = st.columns([3, 1])
     with col1:
-        st.markdown('<div class="main-header">📊 Financial Intelligence RAG</div>', 
+        st.markdown('<div class="main-header">🤖 AI-Powered Enterprise Data Assistant</div>', 
                    unsafe_allow_html=True)
         st.markdown('<div class="sub-header">Enterprise-grade financial document analysis powered by Snowflake AI</div>', 
                    unsafe_allow_html=True)
