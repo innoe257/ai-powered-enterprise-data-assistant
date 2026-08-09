@@ -1,0 +1,66 @@
+# Snowflake Financial Intelligence RAG
+# https://github.com/innocentmamvura/snowflake-financial-rag
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual environments
+venv/
+env/
+ENV/
+.venv/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Secrets - NEVER COMMIT
+credentials/
+*.pem
+*.key
+.env
+.env.local
+.env.*.local
+secrets.toml
+
+# Data files (large)
+data/filings/text/*.html
+data/filings/text/*.txt
+!data/filings/.gitkeep
+!data/embeddings/.gitkeep
+
+# Streamlit
+.streamlit/secrets.toml
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb
+
+# Logs
+*.log

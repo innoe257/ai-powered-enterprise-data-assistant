@@ -1,0 +1,14 @@
+concept_queried,id,cik,concept,label,value,numeric_value,unit,period_end,fiscal_period,fiscal_year,period_type,accession,form_type,filing_date,sec_url
+us-gaap:Assets,30571036,1045810,us-gaap:Assets,Assets,206803000000.0,206803000000,USD,2026-01-25,FY,2026,instant,0001045810-26-000021,10-K,2026-02-25,https://www.sec.gov/Archives/edgar/data/1045810/0001045810-26-000021-index.html
+us-gaap:Assets,30571035,1045810,us-gaap:Assets,Assets,161148000000.0,161148000000,USD,2025-10-26,Q3,2026,instant,,,,
+us-gaap:Assets,30571034,1045810,us-gaap:Assets,Assets,140740000000.0,140740000000,USD,2025-07-27,Q2,2026,instant,,,,
+us-gaap:Assets,30571033,1045810,us-gaap:Assets,Assets,125254000000.0,125254000000,USD,2025-04-27,Q1,2026,instant,,,,
+us-gaap:Assets,30571032,1045810,us-gaap:Assets,Assets,111601000000.0,111601000000,USD,2025-01-26,FY,2025,instant,0001045810-25-000023,10-K,2025-02-26,https://www.sec.gov/Archives/edgar/data/1045810/0001045810-25-000023-index.html
+us-gaap:Assets,30571031,1045810,us-gaap:Assets,Assets,96013000000.0,96013000000,USD,2024-10-27,Q3,2025,instant,0001045810-25-000209,10-Q,2025-08-27,https://www.sec.gov/Archives/edgar/data/1045810/0001045810-25-000209-index.html
+us-gaap:Assets,30571030,1045810,us-gaap:Assets,Assets,85227000000.0,85227000000,USD,2024-07-28,Q2,2025,instant,0001045810-25-000116,10-Q,2025-05-28,https://www.sec.gov/Archives/edgar/data/1045810/0001045810-25-000116-index.html
+us-gaap:Assets,30571029,1045810,us-gaap:Assets,Assets,77072000000.0,77072000000,USD,2024-04-28,Q1,2025,instant,,,,
+us-gaap:Assets,30571028,1045810,us-gaap:Assets,Assets,65728000000.0,65728000000,USD,2024-01-28,FY,2024,instant,0001045810-24-000029,10-K,2024-02-21,https://www.sec.gov/Archives/edgar/data/1045810/0001045810-24-000029-index.html
+us-gaap:Assets,30571027,1045810,us-gaap:Assets,Assets,54148000000.0,54148000000,USD,2023-10-29,Q3,2024,instant,0001045810-24-000264,10-Q,2024-08-28,https://www.sec.gov/Archives/edgar/data/1045810/0001045810-24-000264-index.html
+us-gaap:Assets,30571026,1045810,us-gaap:Assets,Assets,49555000000.0,49555000000,USD,2023-07-30,Q2,2024,instant,0001045810-24-000124,10-Q,2024-05-29,https://www.sec.gov/Archives/edgar/data/1045810/0001045810-24-000124-index.html
+us-gaap:Assets,30571025,1045810,us-gaap:Assets,Assets,44460000000.0,44460000000,USD,2023-04-30,Q1,2024,instant,,,,
+us-gaap:Assets,30571024,1045810,us-gaap:Assets,Assets,41182000000.0,41182000000,USD,2023-01-29,FY,2023,instant,0001045810-23-000017,10-K,2023-02-24,https://www.sec.gov/Archives/edgar/data/1045810/0001045810-23-000017-index.html
