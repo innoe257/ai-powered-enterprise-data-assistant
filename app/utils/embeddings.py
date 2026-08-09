@@ -1,9 +1,6 @@
-"""Embedding and RAG Utilities."""
+"""Embedding and RAG Utilities - Streamlit Cloud Compatible."""
 
-import os
 import re
-import numpy as np
-import pandas as pd
 from typing import List, Dict, Tuple, Optional
 
 
@@ -13,66 +10,16 @@ def search_documents(
     filings: List[dict],
     top_k: int = 5
 ) -> List[dict]:
-    """Search for relevant documents using embeddings or keyword matching.
-    
-    Args:
-        query: User query string
-        embeddings: Pre-computed embeddings dict (or None)
-        filings: List of filing metadata
-        top_k: Number of results to return
-    
-    Returns:
-        List of relevant document dicts with content snippets
-    """
-    if embeddings and 'vectors' in embeddings and 'chunks' in embeddings:
-        return semantic_search(query, embeddings, top_k)
-    else:
-        return keyword_search(query, filings, top_k)
-
-
-def semantic_search(query: str, embeddings: dict, top_k: int) -> List[dict]:
-    """Perform semantic search using pre-computed embeddings."""
-    try:
-        from sentence_transformers import SentenceTransformer
-        import faiss
-        
-        # Load model (cached)
-        model = SentenceTransformer('all-MiniLM-L6-v2')
-        
-        # Encode query
-        query_vec = model.encode([query])
-        
-        # Search FAISS index
-        index = embeddings.get('index')
-        chunks = embeddings.get('chunks', [])
-        
-        if index is None or not chunks:
-            return []
-        
-        distances, indices = index.search(query_vec.astype('float32'), top_k)
-        
-        results = []
-        for idx, distance in zip(indices[0], distances[0]):
-            if idx < len(chunks):
-                chunk = chunks[idx]
-                results.append({
-                    'ticker': chunk.get('ticker', ''),
-                    'form_type': chunk.get('form_type', ''),
-                    'filing_date': chunk.get('filing_date', ''),
-                    'content': chunk.get('text', '')[:500] + "...",
-                    'score': float(distance),
-                    'source': f"{chunk.get('ticker', '')} {chunk.get('form_type', '')} ({chunk.get('filing_date', '')})"
-                })
-        
-        return results
-    except Exception as e:
-        print(f"Semantic search error: {e}")
-        return []
+    """Search for relevant documents. Uses keyword search (works everywhere)."""
+    return keyword_search(query, filings, top_k)
 
 
 def keyword_search(query: str, filings: List[dict], top_k: int) -> List[dict]:
-    """Fallback keyword-based search."""
-    query_terms = query.lower().split()
+    """Keyword-based search - no heavy ML dependencies."""
+    query_terms = [t for t in query.lower().split() if len(t) > 2]
+    if not query_terms:
+        query_terms = [query.lower()]
+    
     results = []
     
     for filing in filings:
@@ -82,16 +29,14 @@ def keyword_search(query: str, filings: List[dict], top_k: int) -> List[dict]:
         try:
             with open(filing['filepath'], 'r', encoding='utf-8') as f:
                 content = f.read()
-        except:
+        except Exception:
             continue
         
-        # Simple scoring: count query term occurrences
+        # Score by term frequency
         score = sum(content.lower().count(term) for term in query_terms)
         
         if score > 0:
-            # Extract snippet around first match
             snippet = extract_snippet(content, query_terms[0])
-            
             results.append({
                 'ticker': filing['ticker'],
                 'form_type': filing['form_type'],
@@ -101,16 +46,15 @@ def keyword_search(query: str, filings: List[dict], top_k: int) -> List[dict]:
                 'source': f"{filing['ticker']} {filing['form_type']} ({filing['filing_date']})"
             })
     
-    # Sort by score and return top_k
     results.sort(key=lambda x: x['score'], reverse=True)
     return results[:top_k]
 
 
-def extract_snippet(content: str, keyword: str, context: int = 200) -> str:
+def extract_snippet(content: str, keyword: str, context: int = 250) -> str:
     """Extract a text snippet around a keyword match."""
     idx = content.lower().find(keyword)
     if idx == -1:
-        return content[:400] + "..."
+        return content[:500] + "..."
     
     start = max(0, idx - context)
     end = min(len(content), idx + len(keyword) + context)
@@ -129,26 +73,13 @@ def generate_response(
     relevant_docs: List[dict],
     xbrl_data: Dict[str, dict]
 ) -> Tuple[str, List[str]]:
-    """Generate a response based on retrieved documents.
-    
-    In demo mode, this uses a rule-based approach.
-    In Snowflake mode, this would call Cortex COMPLETE.
-    """
+    """Generate a response based on retrieved documents and XBRL data."""
     sources = [doc['source'] for doc in relevant_docs]
     
-    # Build context from retrieved documents
-    context = "\n\n".join([
-        f"Source: {doc['source']}\n{doc['content']}"
-        for doc in relevant_docs[:3]
-    ])
-    
-    # Check if query is about specific companies
     tickers = ['AAPL', 'MSFT', 'GOOGL', 'AMZN', 'NVDA', 'TSLA']
     mentioned_tickers = [t for t in tickers if t.lower() in query.lower()]
     
-    # Build response based on query type
     response = build_rule_based_response(query, relevant_docs, xbrl_data, mentioned_tickers)
-    
     return response, sources
 
 
@@ -170,15 +101,33 @@ def build_rule_based_response(
     if 'net income' in query_lower and len(tickers) >= 2:
         return build_comparison_response(tickers, xbrl_data, 'netincome', 'Net Income')
     
+    # Total assets
+    if 'asset' in query_lower and len(tickers) >= 2:
+        return build_comparison_response(tickers, xbrl_data, 'totalassets', 'Total Assets')
+    
+    # Operating income
+    if 'operating income' in query_lower and len(tickers) >= 2:
+        return build_comparison_response(tickers, xbrl_data, 'operatingincome', 'Operating Income')
+    
+    # Free cash flow
+    if 'free cash flow' in query_lower or 'fcf' in query_lower:
+        if len(tickers) >= 2:
+            return build_comparison_response(tickers, xbrl_data, 'freecashflow', 'Free Cash Flow')
+        else:
+            return build_comparison_response(tickers, xbrl_data, 'freecashflow', 'Free Cash Flow')
+    
     # Risk factors
-    if 'risk' in query_lower or 'risk factor' in query_lower:
+    if 'risk' in query_lower:
         return build_risk_response(docs)
     
     # AI-related
-    if 'ai' in query_lower or 'artificial intelligence' in query_lower:
+    if 'ai' in query_lower or 'artificial intelligence' in query_lower or 'machine learning' in query_lower:
         return build_ai_response(docs)
     
-    # Default: summarize retrieved docs
+    # Default: summarize retrieved docs or show metrics
+    if len(tickers) == 1:
+        return build_single_company_response(tickers[0], xbrl_data, docs)
+    
     return build_summary_response(docs)
 
 
@@ -199,18 +148,63 @@ def build_comparison_response(
                 value = latest['numeric_value']
                 period = f"{latest['fiscal_year']} {latest['fiscal_period']}"
                 
-                if value >= 1e12:
-                    formatted = f"${value/1e12:.2f}T"
-                elif value >= 1e9:
-                    formatted = f"${value/1e9:.2f}B"
-                elif value >= 1e6:
-                    formatted = f"${value/1e6:.2f}M"
+                if value is None or (hasattr(value, 'isna') and value.isna()):
+                    continue
+                
+                if abs(value) >= 1e12:
+                    formatted = f"${abs(value)/1e12:.2f}T"
+                elif abs(value) >= 1e9:
+                    formatted = f"${abs(value)/1e9:.2f}B"
+                elif abs(value) >= 1e6:
+                    formatted = f"${abs(value)/1e6:.2f}M"
                 else:
-                    formatted = f"${value:,.0f}"
+                    formatted = f"${abs(value):,.0f}"
                 
                 lines.append(f"**{ticker}:** {formatted} ({period})")
     
+    if len(lines) == 1:
+        lines.append("*No data available for the requested comparison.*")
+    
     lines.append("\n*Data sourced from SEC EDGAR XBRL filings.*")
+    return "\n".join(lines)
+
+
+def build_single_company_response(ticker: str, xbrl_data: Dict[str, dict], docs: List[dict]) -> str:
+    """Build a summary response for a single company."""
+    lines = [f"## {ticker} Financial Summary\n"]
+    
+    metrics_map = {
+        'revenue': 'Revenue',
+        'netincome': 'Net Income',
+        'totalassets': 'Total Assets',
+        'operatingincome': 'Operating Income',
+        'freecashflow': 'Free Cash Flow'
+    }
+    
+    if ticker in xbrl_data:
+        for key, label in metrics_map.items():
+            if key in xbrl_data[ticker] and xbrl_data[ticker][key] is not None:
+                df = xbrl_data[ticker][key]
+                if not df.empty:
+                    latest = df.sort_values('period_end', ascending=False).iloc[0]
+                    value = latest['numeric_value']
+                    if value is not None and not (hasattr(value, 'isna') and value.isna()):
+                        if abs(value) >= 1e12:
+                            formatted = f"${abs(value)/1e12:.2f}T"
+                        elif abs(value) >= 1e9:
+                            formatted = f"${abs(value)/1e9:.2f}B"
+                        elif abs(value) >= 1e6:
+                            formatted = f"${abs(value)/1e6:.2f}M"
+                        else:
+                            formatted = f"${abs(value):,.0f}"
+                        period = f"{latest['fiscal_year']} {latest['fiscal_period']}"
+                        lines.append(f"**{label}:** {formatted} ({period})")
+    
+    if docs:
+        lines.append("\n### Recent Document Mentions")
+        for doc in docs[:3]:
+            lines.append(f"- {doc['source']}")
+    
     return "\n".join(lines)
 
 
@@ -218,9 +212,9 @@ def build_risk_response(docs: List[dict]) -> str:
     """Build a response about risk factors."""
     lines = ["## Risk Factors Mentioned\n"]
     
-    # Extract risk-related sentences from docs
-    risk_keywords = ['risk', 'uncertainty', 'competition', 'regulation', 'litigation', 'cybersecurity']
+    risk_keywords = ['risk', 'uncertain', 'competition', 'regulation', 'litigation', 'cybersecurity', 'volatil']
     
+    found_any = False
     for doc in docs:
         content = doc.get('content', '')
         sentences = re.split(r'(?<=[.!?])\s+', content)
@@ -228,16 +222,19 @@ def build_risk_response(docs: List[dict]) -> str:
         risk_sentences = [
             s for s in sentences
             if any(kw in s.lower() for kw in risk_keywords)
-            and len(s) > 50
+            and len(s) > 40
         ]
         
         if risk_sentences:
+            found_any = True
             lines.append(f"### {doc['source']}")
             for sent in risk_sentences[:3]:
-                lines.append(f"- {sent}")
+                lines.append(f"- {sent.strip()}")
             lines.append("")
     
-    lines.append("*Note: This is a demo response. In production, Snowflake Cortex would provide comprehensive analysis.*")
+    if not found_any:
+        lines.append("*No specific risk factors found in the retrieved documents. Try searching for a specific company.*")
+    
     return "\n".join(lines)
 
 
@@ -245,29 +242,36 @@ def build_ai_response(docs: List[dict]) -> str:
     """Build a response about AI-related content."""
     lines = ["## AI & Technology Mentions\n"]
     
-    ai_keywords = ['artificial intelligence', 'machine learning', 'generative ai', 'llm', 'neural network']
+    ai_keywords = ['artificial intelligence', 'machine learning', 'generative ai', 'llm', 'neural network', 'deep learning', 'automation']
     
+    found_any = False
     for doc in docs:
         content = doc.get('content', '').lower()
-        
         mentions = [kw for kw in ai_keywords if kw in content]
         if mentions:
+            found_any = True
             lines.append(f"**{doc['source']}** mentions: {', '.join(mentions)}")
     
-    lines.append("\n*For detailed AI strategy analysis, switch to Snowflake mode with Cortex AI.*")
+    if not found_any:
+        lines.append("*No AI-specific mentions found in retrieved documents. Try a more specific query.*")
+    
     return "\n".join(lines)
 
 
 def build_summary_response(docs: List[dict]) -> str:
     """Build a generic summary response."""
+    if not docs:
+        return "I couldn't find specific information about that in the available filings. Try asking about:\n\n- Revenue or financial metrics for a specific company\n- Risk factors\n- AI or technology investments\n- Compare metrics between companies (e.g., 'Compare Apple and Microsoft revenue')"
+    
     lines = ["## Document Analysis\n"]
     lines.append("Based on the retrieved financial documents:\n")
     
     for doc in docs[:3]:
         lines.append(f"### {doc['source']}")
-        lines.append(f"{doc['content'][:300]}...")
+        content = doc['content'][:400]
+        lines.append(f"{content}...")
         lines.append("")
     
     lines.append("---")
-    lines.append("*This is a demo response using local data. Connect to Snowflake for AI-powered analysis with Cortex COMPLETE.*")
+    lines.append("*This is a demo response using keyword search on SEC filing data. For AI-powered analysis, integrate with OpenAI API or Snowflake Cortex (paid accounts).*")
     return "\n".join(lines)

@@ -18,15 +18,12 @@ PROJECT_ROOT = Path(__file__).parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
 import streamlit as st
-import pandas as pd
-import numpy as np
 from datetime import datetime
 
 from app.components.chat import render_chat_interface
 from app.components.dashboard import render_financial_dashboard
 from app.components.document_viewer import render_document_viewer
 from app.utils.data_loader import load_demo_data, load_snowflake_data
-from app.utils.config import get_config
 
 # Page configuration
 st.set_page_config(
@@ -64,19 +61,6 @@ st.markdown("""
     .mode-snowflake {
         background-color: #E3F2FD;
         color: #1565C0;
-    }
-    .metric-card {
-        background-color: #f8f9fa;
-        border-radius: 0.5rem;
-        padding: 1rem;
-        border-left: 4px solid #29B5E8;
-    }
-    .stTabs [data-baseweb="tab-list"] {
-        gap: 2rem;
-    }
-    .stTabs [data-baseweb="tab"] {
-        padding: 0.5rem 1rem;
-        font-weight: 600;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -176,15 +160,19 @@ def main():
     # Load data if not already loaded
     if not st.session_state.data_loaded:
         with st.spinner("Loading financial data..."):
-            if st.session_state.mode == "demo":
-                filings, embeddings, xbrl = load_demo_data()
-            else:
-                filings, embeddings, xbrl = load_snowflake_data()
-            
-            st.session_state.filings = filings
-            st.session_state.embeddings = embeddings
-            st.session_state.xbrl_data = xbrl
-            st.session_state.data_loaded = True
+            try:
+                if st.session_state.mode == "demo":
+                    filings, embeddings, xbrl = load_demo_data()
+                else:
+                    filings, embeddings, xbrl = load_snowflake_data()
+                
+                st.session_state.filings = filings
+                st.session_state.embeddings = embeddings
+                st.session_state.xbrl_data = xbrl
+                st.session_state.data_loaded = True
+            except Exception as e:
+                st.error(f"Error loading data: {e}")
+                st.session_state.data_loaded = True
     
     # Render UI
     page = render_sidebar()

@@ -1,4 +1,4 @@
-"""Data Loading Utilities - Updated for Snowflake Backend."""
+"""Data Loading Utilities - Streamlit Cloud Compatible."""
 
 import os
 import pandas as pd
@@ -12,35 +12,39 @@ DATA_DIR = PROJECT_ROOT / "data"
 def load_demo_data() -> Tuple[List[dict], Optional[dict], Dict[str, dict]]:
     """Load demo data from local files."""
     filings = load_filing_metadata()
-    embeddings = load_embeddings()
+    embeddings = None  # Skip embeddings - use keyword search
     xbrl_data = load_xbrl_data()
     return filings, embeddings, xbrl_data
 
 
 def load_snowflake_data() -> Tuple[List[dict], Optional[dict], Dict[str, dict]]:
-    """Load data from Snowflake backend."""
+    """Load data from Snowflake backend. Falls back to demo if connection fails."""
     try:
         import snowflake.connector
         
+        account = os.getenv('SNOWFLAKE_ACCOUNT')
+        user = os.getenv('SNOWFLAKE_USER')
+        password = os.getenv('SNOWFLAKE_PASSWORD')
+        
+        if not all([account, user, password]):
+            return load_demo_data()
+        
         conn = snowflake.connector.connect(
-            account=os.getenv('SNOWFLAKE_ACCOUNT'),
-            user=os.getenv('SNOWFLAKE_USER'),
-            password=os.getenv('SNOWFLAKE_PASSWORD'),
+            account=account,
+            user=user,
+            password=password,
             role=os.getenv('SNOWFLAKE_ROLE', 'ACCOUNTADMIN'),
             warehouse=os.getenv('SNOWFLAKE_WAREHOUSE', 'FINANCIAL_RAG_WH'),
             database=os.getenv('SNOWFLAKE_DATABASE', 'FINANCIAL_RAG'),
             schema=os.getenv('SNOWFLAKE_SCHEMA', 'PUBLIC'),
-            login_timeout=15
+            login_timeout=10
         )
         
-        # Load filings from Snowflake
         filings_df = pd.read_sql("SELECT * FROM RAW_DATA.SEC_FILINGS", conn)
         filings = filings_df.to_dict('records')
         
-        # Load metrics from Snowflake
         metrics_df = pd.read_sql("SELECT * FROM PROCESSED_DATA.FINANCIAL_METRICS", conn)
         
-        # Organize metrics by ticker
         xbrl_data = {}
         tickers = metrics_df['TICKER'].unique() if 'TICKER' in metrics_df.columns else []
         for ticker in tickers:
@@ -53,13 +57,9 @@ def load_snowflake_data() -> Tuple[List[dict], Optional[dict], Dict[str, dict]]:
             xbrl_data[ticker] = ticker_metrics
         
         conn.close()
+        return filings, None, xbrl_data
         
-        embeddings = load_embeddings()
-        return filings, embeddings, xbrl_data
-        
-    except Exception as e:
-        st = __import__('streamlit')
-        st.warning(f"Snowflake connection failed: {e}. Using demo data.")
+    except Exception:
         return load_demo_data()
 
 
@@ -93,18 +93,6 @@ def load_filing_metadata() -> List[dict]:
     return filings
 
 
-def load_embeddings() -> Optional[dict]:
-    """Load pre-computed embeddings if available."""
-    embeddings_path = DATA_DIR / "embeddings" / "document_embeddings.pkl"
-    
-    if embeddings_path.exists():
-        import pickle
-        with open(embeddings_path, 'rb') as f:
-            return pickle.load(f)
-    
-    return None
-
-
 def load_xbrl_data() -> Dict[str, dict]:
     """Load XBRL financial data for all tickers."""
     tickers = ['AAPL', 'MSFT', 'GOOGL', 'AMZN', 'NVDA', 'TSLA']
@@ -122,8 +110,7 @@ def load_xbrl_data() -> Dict[str, dict]:
                     if 'numeric_value' in df.columns:
                         df['numeric_value'] = pd.to_numeric(df['numeric_value'], errors='coerce')
                     ticker_metrics[metric] = df
-                except Exception as e:
-                    print(f"Error loading {csv_path}: {e}")
+                except Exception:
                     ticker_metrics[metric] = None
             else:
                 ticker_metrics[metric] = None
