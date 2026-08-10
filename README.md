@@ -1,6 +1,6 @@
 # 🤖 AI-Powered Enterprise Data Assistant (RAG + Cortex)
 
-[![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://innoe257-ai-powered-enterprise-data-assistant.streamlit.app)
+[![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://innoe257-ai-powered-enterprise-data-assist-streamlit-app-fmkywe.streamlit.app/)
 [![Python 3.11](https://img.shields.io/badge/python-3.11-blue.svg)](https://www.python.org/downloads/)
 [![Snowflake](https://img.shields.io/badge/Snowflake-Cortex%20AI-29B5E8)](https://www.snowflake.com/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -55,7 +55,9 @@ An end-to-end Retrieval-Augmented Generation (RAG) system for analyzing SEC fina
 
 ## 🚀 Live Demo
 
-**🔗 [Launch Streamlit App](https://innoe257-ai-powered-enterprise-data-assistant.streamlit.app)**
+**🔗 [Launch Streamlit App](https://innoe257-ai-powered-enterprise-data-assist-streamlit-app-fmkywe.streamlit.app/)**
+
+📘 **[Full Technical Documentation](TECHNICAL_DOCUMENTATION.md)** — Architecture, data pipeline, Snowflake schema, and API reference
 
 The demo mode uses pre-loaded SEC filings from major tech companies:
 - Apple (AAPL)
@@ -81,7 +83,37 @@ The demo mode uses pre-loaded SEC filings from major tech companies:
 - Snowflake account (optional for demo mode)
 - Git
 
-### Installation
+### Quick Start
+
+```bash
+# Demo mode (local files, no Snowflake needed)
+./run_demo.sh
+
+# Snowflake mode (live database)
+./run_snowflake.sh
+```
+
+Or manually:
+
+```bash
+# Clone the repo
+git clone https://github.com/innoe257/ai-powered-enterprise-data-assistant.git
+cd ai-powered-enterprise-data-assistant
+
+# Create virtual environment
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Configure environment
+cp .env.example .env
+# Edit .env with your credentials
+
+# Run the app
+streamlit run streamlit_app.py
+```
 
 ```bash
 # Clone the repo
